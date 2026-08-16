@@ -105,15 +105,15 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ onSubmit, ownedA
       hunterFortune: 0,
       excludeChameleon: false,
       frogBonus: false,
-      newtLevel: 0,
-      salamanderLevel: 0,
-      lizardKingLevel: 0,
-      leviathanLevel: 0,
-      pythonLevel: 0,
-      kingCobraLevel: 0,
-      seaSerpentLevel: 0,
-      tiamatLevel: 0,
-      crocodileLevel: 0,
+      newtLevel: 10,
+      salamanderLevel: 10,
+      lizardKingLevel: 10,
+      leviathanLevel: 10,
+      pythonLevel: 10,
+      kingCobraLevel: 10,
+      seaSerpentLevel: 10,
+      tiamatLevel: 10,
+      crocodileLevel: 10,
       kuudraTier: "none",
       moneyPerHour: Infinity,
       customKuudraTime: false,
@@ -417,7 +417,7 @@ export const CalculatorForm: React.FC<CalculatorFormProps> = ({ onSubmit, ownedA
                   type="number"
                   min="1"
                   value={form.quantity === 0 ? "" : form.quantity}
-                  placeholder="1"
+                  placeholder="100"
                   onChange={(e) => handleInputChange("quantity", Number(e.target.value) as CalculationFormData["quantity"])}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {

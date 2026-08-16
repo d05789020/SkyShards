@@ -290,7 +290,9 @@ const CalculatorPageContent: React.FC = () => {
   const [recipeOverrides, setRecipeOverrides] = useState<RecipeOverride[]>([]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [progress, setProgress] = useState<WorkerProgress | null>(null);
-
+const [allShardResults, setAllShardResults] = useState<
+  { name: string; cost: number }[]
+>([]);
   // Materials-only mode: per-shard results (incl. trees) and the shard whose tree is being viewed
   const [materialShardResults, setMaterialShardResults] = useState<Map<string, CalculationResult>>(new Map());
   const [materialTreeShardKey, setMaterialTreeShardKey] = useState<string>("");
@@ -569,7 +571,71 @@ const CalculatorPageContent: React.FC = () => {
 
   const formRef = useRef(form);
   formRef.current = form;
+const calculateAllShards = useCallback(async () => {
+  const dataService = DataService.getInstance();
 
+  const shards = await dataService.loadShards();
+
+  const filteredCustomRates = Object.fromEntries(
+    Object.entries(customRates).filter(([, v]) => v !== undefined)
+  ) as { [shardId: string]: number };
+
+  const params: CalculationParams = {
+    customRates: form.ironManView
+      ? filteredCustomRates
+      : await dataService.loadShardCosts(form.instantBuyPrices),
+
+    hunterFortune: form.hunterFortune,
+    excludeChameleon: form.excludeChameleon,
+    frogBonus: form.frogBonus,
+    newtLevel: form.newtLevel,
+    salamanderLevel: form.salamanderLevel,
+    lizardKingLevel: form.lizardKingLevel,
+    leviathanLevel: form.leviathanLevel,
+    pythonLevel: form.pythonLevel,
+    kingCobraLevel: form.kingCobraLevel,
+    seaSerpentLevel: form.seaSerpentLevel,
+    tiamatLevel: 10,
+    crocodileLevel: 10,
+    kuudraTier: form.kuudraTier,
+    moneyPerHour: form.moneyPerHour,
+    customKuudraTime: form.customKuudraTime,
+    kuudraTimeSeconds: form.kuudraTimeSeconds,
+    noWoodenBait: form.noWoodenBait,
+    rateAsCoinValue: !form.ironManView,
+    craftPenalty: form.craftPenalty,
+  };
+
+  setIsCalculating(true);
+
+  const rows: { name: string; cost: number }[] = [];
+
+for (const shard of shards) {
+  console.log("Calculating", shard.name);
+
+  const { promise } = calculateOptimalPathWithWorker(
+    shard.key,
+    150,
+    params,
+    recipeOverrides
+  );
+
+  const result = await promise;
+
+  console.log("Finished", shard.name);
+
+  rows.push({
+    name: shard.name,
+    cost: result.timePerShard
+  });
+}
+
+  rows.sort((a, b) => a.name.localeCompare(b.name));
+
+  setAllShardResults(rows);
+
+  setIsCalculating(false);
+}, [customRates, form, recipeOverrides]);
   const handleCalculate = useCallback(async (formData: CalculationFormData, setFormFn: (data: CalculationFormData) => void) => {
     setFormFn(formData);
     // For immediate fields like shard selection, calculate immediately
@@ -734,12 +800,22 @@ const CalculatorPageContent: React.FC = () => {
 
               {/* Calculator Settings Form */}
               <CalculatorFormWithContext
+              
                 onSubmit={handleCalculate}
                 inventory={useInventory ? inventory : undefined}
                 ownedAttributes={ownedAttributes}
                 useInventory={useInventory}
                 onUseInventoryChange={handleUseInventoryChange}
               />
+
+              <div className="mt-3">
+  <button
+    onClick={calculateAllShards}
+    className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-md py-2"
+  >
+    Calculate All Shards
+  </button>
+</div>
             </div>
           </div>
           {/* Results Panel */}
@@ -799,7 +875,29 @@ const CalculatorPageContent: React.FC = () => {
                 onMaterialTreeShardChange={setMaterialTreeShardKey}
               />
             )}
+{allShardResults.length > 0 && (
+  <div className="bg-white/5 rounded-md p-4">
+    <table className="w-full text-white">
+      <thead>
+        <tr>
+          <th className="text-left">Shard</th>
+          <th className="text-right">Cost</th>
+        </tr>
+      </thead>
 
+      <tbody>
+        {allShardResults.map(r => (
+          <tr key={r.name}>
+            <td>{r.name}</td>
+            <td className="text-right">
+              {Math.round(r.cost).toLocaleString()}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
             {/* Empty State */}
             {!result && !inventoryResult && !isCalculating && (
               <div className="text-center py-10 bg-white/5 border border-white/10 rounded-md">

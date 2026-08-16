@@ -817,9 +817,9 @@ export class CalculationService {
       } else {
         const dummyParams: CalculationParams = {
           ...params,
-          seaSerpentLevel: 0,
-          tiamatLevel: 0,
-          crocodileLevel: 0,
+          seaSerpentLevel: 10,
+          tiamatLevel: 10,
+          crocodileLevel: 10,
         };
         const result = this.computeMinCosts(data, dummyParams);
         minCostsCache = { minCosts: result.minCosts, choices: result.choices };
