@@ -291,7 +291,7 @@ const CalculatorPageContent: React.FC = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [progress, setProgress] = useState<WorkerProgress | null>(null);
 const [allShardResults, setAllShardResults] = useState<
-  { name: string; cost: number }[]
+  { name: string; cost: number; fusions: number }[]
 >([]);
   // Materials-only mode: per-shard results (incl. trees) and the shard whose tree is being viewed
   const [materialShardResults, setMaterialShardResults] = useState<Map<string, CalculationResult>>(new Map());
@@ -574,67 +574,89 @@ const [allShardResults, setAllShardResults] = useState<
 const calculateAllShards = useCallback(async () => {
   const dataService = DataService.getInstance();
 
-  const shards = await dataService.loadShards();
+  try {
+    setIsCalculating(true);
+    
 
-  const filteredCustomRates = Object.fromEntries(
-    Object.entries(customRates).filter(([, v]) => v !== undefined)
-  ) as { [shardId: string]: number };
+    // Load all shards once
+    const shards = await dataService.loadShards();
 
-  const params: CalculationParams = {
-    customRates: form.ironManView
-      ? filteredCustomRates
-      : await dataService.loadShardCosts(form.instantBuyPrices),
+    // Prepare custom rates once
+    const filteredCustomRates = Object.fromEntries(
+      Object.entries(customRates).filter(([, v]) => v !== undefined)
+    ) as { [shardId: string]: number };
 
-    hunterFortune: form.hunterFortune,
-    excludeChameleon: form.excludeChameleon,
-    frogBonus: form.frogBonus,
-    newtLevel: form.newtLevel,
-    salamanderLevel: form.salamanderLevel,
-    lizardKingLevel: form.lizardKingLevel,
-    leviathanLevel: form.leviathanLevel,
-    pythonLevel: form.pythonLevel,
-    kingCobraLevel: form.kingCobraLevel,
-    seaSerpentLevel: form.seaSerpentLevel,
-    tiamatLevel: 10,
-    crocodileLevel: 10,
-    kuudraTier: form.kuudraTier,
-    moneyPerHour: form.moneyPerHour,
-    customKuudraTime: form.customKuudraTime,
-    kuudraTimeSeconds: form.kuudraTimeSeconds,
-    noWoodenBait: form.noWoodenBait,
-    rateAsCoinValue: !form.ironManView,
-    craftPenalty: form.craftPenalty,
-  };
+    // Prepare calculation parameters once
+    const params: CalculationParams = {
+      customRates: form.ironManView
+        ? filteredCustomRates
+        : await dataService.loadShardCosts(form.instantBuyPrices),
 
-  setIsCalculating(true);
+      hunterFortune: form.hunterFortune,
+      excludeChameleon: form.excludeChameleon,
+      frogBonus: form.frogBonus,
+      newtLevel: form.newtLevel,
+      salamanderLevel: form.salamanderLevel,
+      lizardKingLevel: form.lizardKingLevel,
+      leviathanLevel: form.leviathanLevel,
+      pythonLevel: form.pythonLevel,
+      kingCobraLevel: form.kingCobraLevel,
+      seaSerpentLevel: form.seaSerpentLevel,
+      tiamatLevel: 10,
+      crocodileLevel: 10,
+      kuudraTier: form.kuudraTier,
+      moneyPerHour: form.moneyPerHour,
+      customKuudraTime: form.customKuudraTime,
+      kuudraTimeSeconds: form.kuudraTimeSeconds,
+      noWoodenBait: form.noWoodenBait,
+      rateAsCoinValue: !form.ironManView,
+      craftPenalty: form.craftPenalty,
+    };
 
-  const rows: { name: string; cost: number }[] = [];
+    // Convert every shard into a target for the parallel worker system
+    const targets = shards.map(shard => ({
+      shard: shard.key,
+      quantity: 1000,
+    }));
 
-for (const shard of shards) {
-  console.log("Calculating", shard.name);
 
-  const { promise } = calculateOptimalPathWithWorker(
-    shard.key,
-    150,
-    params,
-    recipeOverrides
-  );
+    // Calculate ALL shards using the existing parallel worker pool
+    const { promise } = calculateMultipleShardsParallel(
+      targets,
+      params,
+      recipeOverrides,
+      (p) => {
+        setProgress({
+          ...p,
+          message: p.message || `Calculating ${shards.length} shards...`
+        });
+      }
+    );
 
-  const result = await promise;
+    const results = await promise;
 
-  console.log("Finished", shard.name);
+    // Convert results into the simple name/cost format used by the table
+const rows: { name: string; cost: number; fusions: number }[] = results.map((result, index) => ({
+name: shards[index]?.name || targets[index]?.shard || "Unknown",
+  cost: result.timePerShard,
+  fusions: result.craftsNeeded
+}));
 
-  rows.push({
-    name: shard.name,
-    cost: result.timePerShard
-  });
-}
+    // Sort alphabetically
+    rows.sort((a, b) => a.name.localeCompare(b.name));
 
-  rows.sort((a, b) => a.name.localeCompare(b.name));
+    // Only update React once after all calculations finish
+    setAllShardResults(rows);
 
-  setAllShardResults(rows);
+ 
 
-  setIsCalculating(false);
+  } catch (error) {
+    console.error("Calculate All Shards failed:", error);
+
+
+  } finally {
+    setIsCalculating(false);
+  }
 }, [customRates, form, recipeOverrides]);
   const handleCalculate = useCallback(async (formData: CalculationFormData, setFormFn: (data: CalculationFormData) => void) => {
     setFormFn(formData);
@@ -878,23 +900,27 @@ for (const shard of shards) {
 {allShardResults.length > 0 && (
   <div className="bg-white/5 rounded-md p-4">
     <table className="w-full text-white">
-      <thead>
-        <tr>
-          <th className="text-left">Shard</th>
-          <th className="text-right">Cost</th>
-        </tr>
-      </thead>
+<thead>
+  <tr>
+    <th className="text-left">Shard</th>
+    <th className="text-right">Cost</th>
+    <th className="text-right">Fusions</th>
+  </tr>
+</thead>
 
-      <tbody>
-        {allShardResults.map(r => (
-          <tr key={r.name}>
-            <td>{r.name}</td>
-            <td className="text-right">
-              {Math.round(r.cost).toLocaleString()}
-            </td>
-          </tr>
-        ))}
-      </tbody>
+<tbody>
+  {allShardResults.map(r => (
+    <tr key={r.name}>
+  <td>{r.name}</td>
+  <td className="text-right">
+    {Math.round(r.cost).toLocaleString()}
+  </td>
+  <td className="text-right">
+    {r.fusions.toLocaleString()}
+  </td>
+</tr>
+  ))}
+</tbody>
     </table>
   </div>
 )}
