@@ -3,6 +3,7 @@ import type {
   AlternativeSelectionContext,
   CalculationParams,
   Data,
+  FusionJson,
   InventoryRecipeTree,
   Recipe,
   RecipeChoice,
@@ -13,6 +14,18 @@ import type {
   Shards,
 } from "../types/types";
 import { BLACK_HOLE_SHARD, NO_FORTUNE_SHARDS, WOODEN_BAIT_SHARDS } from "../constants";
+import { DataService } from "./dataService";
+
+const INTEGER_EPSILON = 1e-12;
+
+export const snapToInteger = (value: number): number => {
+  if (!Number.isFinite(value)) return value;
+  const rounded = Math.round(value);
+  return Math.abs(value - rounded) <= INTEGER_EPSILON * Math.max(1, Math.abs(value)) ? rounded : value;
+};
+
+export const craftsForQuantity = (quantity: number, outputQuantity: number): number =>
+  Math.ceil(snapToInteger(quantity / outputQuantity));
 
 export class CalculationService {
   private static instance: CalculationService;
@@ -61,6 +74,11 @@ export class CalculationService {
       customKuudraTime: params.customKuudraTime,
       kuudraTimeSeconds: params.kuudraTimeSeconds,
       noWoodenBait: params.noWoodenBait,
+      // buildData branches on this to decide whether a shard's rate is a coin price
+      // or an hourly rate, so two calls differing only here must not share an entry.
+      // craftPenalty is absent on purpose: it only affects computeMinCosts, never the
+      // Data this key guards.
+      rateAsCoinValue: params.rateAsCoinValue,
     });
   }
 
@@ -73,10 +91,12 @@ export class CalculationService {
     }
 
     try {
-      const [fusionResponse, ratesResponse] = await Promise.all([fetch(`${import.meta.env.BASE_URL}fusion-data.json`), fetch(`${import.meta.env.BASE_URL}rates.json`)]);
-
-      const fusionJson = await fusionResponse.json();
-      const defaultRates = await ratesResponse.json();
+      // Both files go through DataService so the ~6.5 MB fusion-data.json is fetched
+      // and parsed once per realm, rather than once here and again for every other
+      // consumer. The params-keyed dataCache above is a separate layer: it memoises
+      // the *built* Data, which differs per fortune/level/rate settings.
+      const dataService = DataService.getInstance();
+      const [fusionJson, defaultRates] = await Promise.all([dataService.loadFusionJson(), dataService.loadDefaultRates()]);
 
       const result = this.buildData(fusionJson, defaultRates, params);
 
@@ -95,11 +115,7 @@ export class CalculationService {
     }
   }
 
-  buildData(
-    fusionJson: { recipes: Record<string, Record<string, [string, string][]>>; shards: Record<string, Shard> },
-    defaultRates: Record<string, number>,
-    params: CalculationParams
-  ): Data {
+  buildData(fusionJson: FusionJson, defaultRates: Record<string, number>, params: CalculationParams): Data {
     this.defaultRates = defaultRates;
     const recipes: Recipes = {};
     for (const outputShard in fusionJson.recipes) {
@@ -405,11 +421,8 @@ export class CalculationService {
       const { recipes, effectiveOutputQty, fuseAmounts } = precomputed[outputShard];
       let bestCost = currentCost;
       let bestRecipe: Recipe | null = currentChoice.recipe;
-      // recipes was being mutated in the loop somewhere, so make a copy. idk why
-      const arr = recipes.slice()
-
-      for (let i = 0; i < arr.length; i++) {
-        const recipe = arr[i];
+      for (let i = 0; i < recipes.length; i++) {
+        const recipe = recipes[i];
         const [fuse1, fuse2] = fuseAmounts[i];
         const [input1, input2] = recipe.inputs;
         const costInput1 = minCosts.get(input1)! * fuse1;
@@ -566,50 +579,9 @@ export class CalculationService {
     const directOption = alternatives.find((alt) => alt.recipe === null) || null;
     const fusionAlts = alternatives.filter((alt) => alt.recipe !== null);
 
-    // Build a set of valid input pairs for normalization check
-    const validPairs = new Set<string>();
-    for (const alt of fusionAlts) {
-      if (alt.recipe) {
-        const [a, b] = alt.recipe.inputs;
-        validPairs.add(`${a}-${b}-${alt.recipe.outputQuantity}`);
-      }
-    }
-
-    // Count how many times each shard appears in any input slot
-    const shardCount: Record<string, number> = {};
-    for (const alt of fusionAlts) {
-      if (alt.recipe) {
-        for (const shard of alt.recipe.inputs) {
-          shardCount[shard] = (shardCount[shard] || 0) + 1;
-        }
-      }
-    }
-
-    // For each recipe, put the most common shard in the first slot,
-    // but only if the normalized recipe exists
-    const normalized: AlternativeRecipeOption[] = fusionAlts.map((alt) => {
-      if (!alt.recipe) return alt;
-      const [a, b] = alt.recipe.inputs;
-      // If b is more common than a, and the swapped recipe exists, swap
-      if ((shardCount[b] ?? 0) > (shardCount[a] ?? 0)) {
-        const swappedKey = `${b}-${a}-${alt.recipe.outputQuantity}`;
-        if (validPairs.has(swappedKey)) {
-          return {
-            ...alt,
-            recipe: {
-              ...alt.recipe,
-              inputs: [b, a],
-            },
-          };
-        }
-      }
-      return alt;
-    });
-
-    // Remove mirrored recipes (same pair, different order)
     const seen = new Set<string>();
     const deduped: AlternativeRecipeOption[] = [];
-    for (const alt of normalized) {
+    for (const alt of fusionAlts) {
       if (!alt.recipe) continue;
       const key = `${alt.recipe.inputs[0]}-${alt.recipe.inputs[1]}-${alt.recipe.outputQuantity}`;
       if (!seen.has(key)) {
@@ -888,6 +860,78 @@ export class CalculationService {
     }
   }
 
+  /**
+   * Quantity math for a cycle node: how many crafts the loop needs to run to yield
+   * `requiredQuantity` of `shard`, and how much of each external input that costs.
+   *
+   * Returns null when `steps` holds no recipe producing `shard`; every caller treats
+   * that as "leave the node alone".
+   *
+   * `netOutputPerCycle` is the sensitive part: a float subtraction feeding a ceil, so
+   * e.g. `2 * 1.2 - 2` lands on 0.3999999999999999, which used to round a 250-craft
+   * loop up to 252. `craftsForQuantity` snaps the ratio back onto the whole number it
+   * is a hair away from.
+   */
+  public computeCycleQuantities(
+    shard: string,
+    steps: { outputShard: string; recipe: Recipe }[],
+    requiredQuantity: number,
+    data: Data,
+    crocodileMultiplier: number
+  ): { roundedCrafts: number; stepCount: number; quantityForInput: (inputShard: string) => number } | null {
+    const outputStep = steps.find((step) => step.outputShard === shard);
+    if (!outputStep) return null;
+
+    const recipe = outputStep.recipe;
+    const baseOutput = recipe.outputQuantity;
+    const expectedOutput = recipe.isReptile ? baseOutput * crocodileMultiplier : baseOutput;
+
+    // How much of the target the loop eats on its way round, so a cycle that consumes
+    // more than it makes still terminates (via the expectedOutput fallback below).
+    let totalInputsConsumed = 0;
+    steps.forEach((step) => {
+      step.recipe.inputs.forEach((inputId) => {
+        if (inputId === shard) {
+          const inputShard = data.shards[inputId];
+          totalInputsConsumed += inputShard.fuse_amount;
+        }
+      });
+    });
+
+    // Snapped before the sign test: `5 * 1.2 - 6` is 8.9e-16, i.e. a loop that nets
+    // exactly nothing would otherwise read as net-positive and demand a preposterous
+    // number of crafts instead of falling through to the expectedOutput branch.
+    const netOutputPerCycle = snapToInteger(expectedOutput - totalInputsConsumed);
+    const expectedCrafts = netOutputPerCycle > 0
+      ? craftsForQuantity(requiredQuantity, netOutputPerCycle)
+      : craftsForQuantity(requiredQuantity, expectedOutput);
+    const stepCount = steps.length;
+    // Every step of the loop runs the same number of times, so round up to a whole
+    // number of laps.
+    const roundedCrafts = Math.ceil(expectedCrafts / stepCount) * stepCount;
+
+    // Inputs produced inside the loop are already accounted for by the loop itself;
+    // only the ones that have to come from outside get a quantity.
+    const inputQuantities = new Map<string, number>();
+    const outputShards = new Set(steps.map((step) => step.outputShard));
+
+    steps.forEach((step) => {
+      step.recipe.inputs.forEach((inputId) => {
+        if (!outputShards.has(inputId)) {
+          const inputShard = data.shards[inputId];
+          const currentQuantity = inputQuantities.get(inputId) || 0;
+          inputQuantities.set(inputId, currentQuantity + inputShard.fuse_amount);
+        }
+      });
+    });
+
+    return {
+      roundedCrafts,
+      stepCount,
+      quantityForInput: (inputShard) => (inputQuantities.get(inputShard) || 0) * (roundedCrafts / stepCount),
+    };
+  }
+
   assignQuantities(
     tree: RecipeTree,
     requiredQuantity: number,
@@ -904,7 +948,7 @@ export class CalculationService {
       case "recipe": {
         const recipe = tree.recipe;
         const outputQuantity = this.getEffectiveOutputQuantity(recipe, crocodileMultiplier);
-        const craftsNeeded = Math.ceil(requiredQuantity / outputQuantity);
+        const craftsNeeded = craftsForQuantity(requiredQuantity, outputQuantity);
         tree.craftsNeeded = craftsNeeded;
         craftCounter.total += craftsNeeded;
 
@@ -919,53 +963,19 @@ export class CalculationService {
         break;
       }
 
-      case "cycle":
-        { const outputStep = tree.steps.find((step) => step.outputShard === tree.shard);
-        if (!outputStep) break;
-
-        const recipe = outputStep.recipe;
-        const baseOutput = recipe.outputQuantity;
-        const expectedOutput = recipe.isReptile ? baseOutput * crocodileMultiplier : baseOutput;
-
-        // Calculate net output per cycle
-        let totalInputsConsumed = 0;
-        tree.steps.forEach((step) => {
-          step.recipe.inputs.forEach((inputId) => {
-            if (inputId === tree.shard) {
-              const inputShard = data.shards[inputId];
-              totalInputsConsumed += inputShard.fuse_amount;
-            }
-          });
-        });
-
-        const netOutputPerCycle = expectedOutput - totalInputsConsumed;
-        const expectedCrafts = netOutputPerCycle > 0 ? Math.ceil(requiredQuantity / netOutputPerCycle) : Math.ceil(requiredQuantity / expectedOutput);
-        const stepCount = tree.steps.length;
-        const roundedCrafts = Math.ceil(expectedCrafts / stepCount) * stepCount;
+      case "cycle": {
+        const cycle = this.computeCycleQuantities(tree.shard, tree.steps, requiredQuantity, data, crocodileMultiplier);
+        if (!cycle) break;
 
         tree.multiplier = crocodileMultiplier;
-        craftCounter.total += roundedCrafts;
-        tree.craftsNeeded = roundedCrafts;
-
-        const inputQuantities = new Map<string, number>();
-        const outputShards = new Set(tree.steps.map((step) => step.outputShard));
-
-        tree.steps.forEach((step) => {
-          step.recipe.inputs.forEach((inputId) => {
-            if (!outputShards.has(inputId)) {
-              const inputShard = data.shards[inputId];
-              const currentQuantity = inputQuantities.get(inputId) || 0;
-              inputQuantities.set(inputId, currentQuantity + inputShard.fuse_amount);
-            }
-          });
-        });
+        craftCounter.total += cycle.roundedCrafts;
+        tree.craftsNeeded = cycle.roundedCrafts;
 
         tree.cycleInputs.forEach((cycleInput) => {
-          const inputQuantity = inputQuantities.get(cycleInput.shard) || 0;
-          const totalInputQuantity = inputQuantity * (roundedCrafts / stepCount);
-          this.assignQuantities(cycleInput, totalInputQuantity, data, craftCounter, choices, crocodileMultiplier, params, recipeOverrides);
+          this.assignQuantities(cycleInput, cycle.quantityForInput(cycleInput.shard), data, craftCounter, choices, crocodileMultiplier, params, recipeOverrides);
         });
-        break; }
+        break;
+      }
     }
   }
 
@@ -1061,8 +1071,10 @@ export class CalculationService {
     const choice = choices.get(targetShard);
     if (choice?.recipe) {
       const outputQuantity = choice.recipe.isReptile ? choice.recipe.outputQuantity * crocodileMultiplier : choice.recipe.outputQuantity;
-      craftsNeeded = Math.ceil(requiredQuantity / outputQuantity);
-      totalShardsProduced = craftsNeeded * outputQuantity;
+      craftsNeeded = craftsForQuantity(requiredQuantity, outputQuantity);
+      // Genuinely fractional (crafts x expected reptile output), so only the float
+      // noise is snapped away — the .2 in "7.2 shards produced" is real.
+      totalShardsProduced = snapToInteger(craftsNeeded * outputQuantity);
     }
     const shardWeights = this.calculateShardWeights(totalQuantities, data, params, getDirectCostFn);
     return { totalShardsProduced, craftsNeeded, shardWeights };
@@ -1098,7 +1110,3 @@ export class CalculationService {
     return updatedOverrides;
   }
 }
-
-// Create and export a default instance
-const calculationService = new CalculationService();
-export default calculationService;

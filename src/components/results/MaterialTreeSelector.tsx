@@ -1,35 +1,37 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Search, X, ChevronDown } from "lucide-react";
-import type { ShardWithKey } from "../../types/types";
-import { getRarityColor } from "../../utilities";
-import { SuggestionItem } from "../forms/search";
+import type { CalculationResult, Shard } from "../../types/types";
+import { getRarityColor, isFocusRestoredByWindow, shardIconUrl } from "../../utilities";
+import { MaterialSuggestionItem } from "./MaterialSuggestionItem";
 
 interface MaterialTreeSelectorProps {
-  shards: ShardWithKey[];
+  shards: Shard[];
+  shardCalculationData: Map<string, CalculationResult> | undefined;
   value: string;
   onChange: (key: string) => void;
 }
 
-export const MaterialTreeSelector: React.FC<MaterialTreeSelectorProps> = ({ shards, value, onChange }) => {
+export const MaterialTreeSelector: React.FC<MaterialTreeSelectorProps> = ({ shards, shardCalculationData, value, onChange}) => {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const selectedShard = useMemo(() => shards.find((s) => s.key === value), [shards, value]);
+  const selectedShard = useMemo(() => shards.find((s) => s.id === value), [shards, value]);
 
   const suggestions = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
     const list = trimmed
       ? shards.filter((s) => s.name.toLowerCase().includes(trimmed) || s.family.toLowerCase().includes(trimmed) || s.type.toLowerCase().includes(trimmed))
       : shards;
-    return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    //return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    return list;
   }, [shards, query]);
 
   const handleSelect = useCallback(
-    (shard: ShardWithKey) => {
-      onChange(shard.key);
+    (shard: Shard) => {
+      onChange(shard.id);
       setQuery("");
       setIsOpen(false);
       setFocusedIndex(-1);
@@ -89,11 +91,11 @@ export const MaterialTreeSelector: React.FC<MaterialTreeSelectorProps> = ({ shar
   }, []);
 
   return (
-    <div className="relative">
+    <div className={`relative flex-1`}>
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           {selectedShard && !isOpen ? (
-            <img src={`${import.meta.env.BASE_URL}shardIcons/${selectedShard.key}.png`} alt={selectedShard.name} className="w-4 h-4 object-contain" loading="lazy" />
+            <img src={shardIconUrl(selectedShard.id)} alt={selectedShard.name} className="w-4 h-4 object-contain" loading="lazy" />
           ) : (
             <Search className="h-4 w-4 text-slate-400" />
           )}
@@ -108,8 +110,10 @@ export const MaterialTreeSelector: React.FC<MaterialTreeSelectorProps> = ({ shar
             setFocusedIndex(-1);
           }}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
-            setQuery("");
+          onFocus={(e) => {
+            // Keep the in-progress query when the browser hands focus back after an alt-tab;
+            // only a deliberate focus starts a fresh search.
+            if (!isFocusRestoredByWindow(e.target)) setQuery("");
             setIsOpen(true);
           }}
           placeholder="Select a shard to view its fusion tree..."
@@ -141,7 +145,7 @@ export const MaterialTreeSelector: React.FC<MaterialTreeSelectorProps> = ({ shar
       {isOpen && suggestions.length > 0 && (
         <ul ref={listRef} className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-600 rounded-md shadow-xl max-h-60 overflow-y-auto">
           {suggestions.map((shard, index) => (
-            <SuggestionItem key={shard.key} shard={shard} index={index} focusedIndex={focusedIndex} onSelect={handleSelect} isSelecting={false} setFocusedIndex={setFocusedIndex} />
+            <MaterialSuggestionItem key={shard.id} shard={shard} index={index} focusedIndex={focusedIndex} time={shardCalculationData?.get(shard.id)?.totalTime ?? Number.POSITIVE_INFINITY} onSelect={handleSelect} isSelecting={false} setFocusedIndex={setFocusedIndex} />
           ))}
         </ul>
       )}

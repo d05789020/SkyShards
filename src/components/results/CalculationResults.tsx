@@ -1,13 +1,33 @@
 import React, { useMemo, useState } from "react";
 import { BarChart3, Hammer } from "lucide-react";
-import { formatLargeNumber } from "../../utilities";
-import type { CalculationResultsProps, ShardWithKey } from "../../types/types";
-import { MaterialItem, useToast } from "../ui";
-import pako from "pako";
+import { formatLargeNumber, gzipBase64 } from "../../utilities";
+import type { CalculationParams, CalculationResult, Data, RecipeOverride, Shard } from "../../types/types";
+import { MaterialItem } from "../ui";
+import { useCopyToClipboard } from "../../hooks";
 import { CopyTreeModal } from "../modals";
 import { ResultSummaryCards } from "./ResultSummaryCards";
 import { FusionTreeView } from "./FusionTreeView";
 import { MaterialTreeSelector } from "./MaterialTreeSelector";
+import { FusionTreeSortDropown } from "./FusionTreeViewSortDropdown";
+
+interface CalculationResultsProps {
+  result: CalculationResult;
+  data: Data;
+  targetShardName: string;
+  targetShard: string;
+  requiredQuantity: number;
+  params: CalculationParams;
+  onResultUpdate: (result: CalculationResult) => void;
+  recipeOverrides: RecipeOverride[];
+  onRecipeOverridesUpdate: (overrides: RecipeOverride[]) => void;
+  onResetRecipeOverrides: () => void;
+  onShowActiveAlternatives: () => void;
+  ironManView: boolean;
+  materialsOnly?: boolean;
+  materialShardResults?: Map<string, CalculationResult>;
+  materialTreeShardKey?: string;
+  onMaterialTreeShardChange?: (key: string) => void;
+}
 
 export const CalculationResults: React.FC<CalculationResultsProps> = ({
   result,
@@ -18,6 +38,7 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
   recipeOverrides,
   onRecipeOverridesUpdate,
   onResetRecipeOverrides,
+  onShowActiveAlternatives,
   ironManView,
   materialsOnly = false,
   materialShardResults,
@@ -25,13 +46,9 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
   onMaterialTreeShardChange,
 }) => {
   const [copyModalOpen, setCopyModalOpen] = useState(false);
-  const { toast } = useToast();
-
-  const gzipBase64 = (text: string) => {
-    const gzipped = pako.gzip(text);
-    const binary = String.fromCharCode(...gzipped);
-    return btoa(binary);
-  };
+  const copyToClipboard = useCopyToClipboard();
+  
+  const [materialTreeSortSelection, setMaterialTreeSortSelection] = useState("default");
 
   // Materials-only copy (no tree): flatten the combined totals
   const buildNoFrillsString = () => {
@@ -51,23 +68,36 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
     return "<SkyHanniRecipe>(V1):" + gzipBase64(JSON.stringify(list));
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard
-      .writeText(text)
-      .then(() => toast({ title: "Copied", description: `${label} list copied to clipboard.`, variant: "success" }))
-      .catch((err) => {
-        console.error(`Failed to copy ${label} list:`, err);
-        toast({ title: "Copy failed", description: "Failed to copy to clipboard.", variant: "error" });
-      });
-  };
 
   // Shards available to view individually (the selected target shards)
-  const selectableShards = useMemo<ShardWithKey[]>(() => {
+  const selectableShards = useMemo<Shard[]>(() => {
     if (!materialShardResults) return [];
     return Array.from(materialShardResults.keys())
       .filter((key) => data.shards[key])
       .map((key) => ({ ...data.shards[key], key }));
-  }, [materialShardResults, data]);
+  }, [materialShardResults, data]); 
+
+  const sortByShortestTime = (shardsToSort: Shard[], shardData: Map<string, CalculationResult> | undefined) => {
+      if(!shardsToSort) return [];
+      if(!shardData) return shardsToSort;
+      return shardsToSort
+      .map(shard => ({shard, value: shardData.get(shard.id)?.totalTime}))
+      .sort(({value: shardATime}, {value: shardBTime}) => {
+        if(shardATime === undefined && shardBTime === undefined) return 0;
+        if(shardATime === undefined) return 1;
+        if(shardBTime === undefined) return -1;
+        return shardATime - shardBTime;
+      }).map(({ shard }) => shard);
+  }
+
+  const sortedShards = useMemo<Shard[]>(() => {
+    switch (materialTreeSortSelection) {
+      case "shortest": return sortByShortestTime(selectableShards, materialShardResults);
+      case "alphabetically": return [...selectableShards].sort((a, b) => a.name.localeCompare(b.name));
+      case "rarity": return selectableShards;
+      default: return [...selectableShards].sort((a, b) => a.name.localeCompare(b.name));
+    }
+  }, [selectableShards, materialTreeSortSelection, materialShardResults]);
 
   const selectedTreeResult = materialTreeShardKey ? materialShardResults?.get(materialTreeShardKey) : undefined;
 
@@ -172,7 +202,10 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
             <h3 className="text-lg font-semibold text-white">View Fusion Tree</h3>
           </div>
           <p className="text-sm text-slate-400">Select one of your shards to view its full fusion tree. Alternatives you set here apply to every shard.</p>
-          <MaterialTreeSelector shards={selectableShards} value={materialTreeShardKey} onChange={(key) => onMaterialTreeShardChange?.(key)} />
+          <div className="flex items-center gap-2">
+            <MaterialTreeSelector shards={sortedShards} shardCalculationData={materialShardResults} value={materialTreeShardKey} onChange={(key) => onMaterialTreeShardChange?.(key)}/>
+            <FusionTreeSortDropown value={materialTreeSortSelection} onChange={setMaterialTreeSortSelection} />
+          </div>
         </div>
       )}
       {materialsOnly && selectedTreeResult && data.shards[materialTreeShardKey] && (
@@ -185,6 +218,7 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
             recipeOverrides={recipeOverrides}
             onRecipeOverridesUpdate={onRecipeOverridesUpdate}
             onResetRecipeOverrides={onResetRecipeOverrides}
+            onShowActiveAlternatives={onShowActiveAlternatives}
             ironManView={ironManView}
           />
         </>
@@ -198,15 +232,16 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
           recipeOverrides={recipeOverrides}
           onRecipeOverridesUpdate={onRecipeOverridesUpdate}
           onResetRecipeOverrides={onResetRecipeOverrides}
+          onShowActiveAlternatives={onShowActiveAlternatives}
           ironManView={ironManView}
         />
       )}
       <CopyTreeModal
         open={copyModalOpen}
         onClose={() => setCopyModalOpen(false)}
-        onCopySkyOcean={() => copyToClipboard("", "SkyOcean")}
-        onCopyNoFrills={() => copyToClipboard(buildNoFrillsString(), "NoFrills")}
-        onCopySkyHanni={() => copyToClipboard(buildSkyHanniString(), "SkyHanni")}
+        onCopySkyOcean={() => void copyToClipboard("", "SkyOcean", "list")}
+        onCopyNoFrills={() => void copyToClipboard(buildNoFrillsString(), "NoFrills", "list")}
+        onCopySkyHanni={() => void copyToClipboard(buildSkyHanniString(), "SkyHanni", "list")}
         materialsOnly={true}
       />
     </div>
