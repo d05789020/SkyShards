@@ -291,7 +291,12 @@ const CalculatorPageContent: React.FC = () => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [progress, setProgress] = useState<WorkerProgress | null>(null);
 const [allShardResults, setAllShardResults] = useState<
-  { name: string; cost: number; fusions: number }[]
+  {
+    name: string;
+    cost: number;
+    fusions: number;
+    materials: { name: string; quantity: number }[];
+  }[]
 >([]);
   // Materials-only mode: per-shard results (incl. trees) and the shard whose tree is being viewed
   const [materialShardResults, setMaterialShardResults] = useState<Map<string, CalculationResult>>(new Map());
@@ -636,11 +641,28 @@ const calculateAllShards = useCallback(async () => {
     const results = await promise;
 
     // Convert results into the simple name/cost format used by the table
-const rows: { name: string; cost: number; fusions: number }[] = results.map((result, index) => ({
-name: shards[index]?.name || targets[index]?.shard || "Unknown",
-  cost: result.timePerShard,
-  fusions: result.craftsNeeded
-}));
+// Convert results into the format used by the table,
+// including the materials required for each shard.
+const rows: {
+  name: string;
+  cost: number;
+  fusions: number;
+  materials: { name: string; quantity: number }[];
+}[] = results.map((result, index) => {
+  const materials = Array.from(result.totalQuantities.entries())
+    .map(([shardId, quantity]) => ({
+      name: shards.find(shard => shard.key === shardId)?.name || shardId,
+      quantity,
+    }))
+    .sort((a, b) => b.quantity - a.quantity);
+
+  return {
+    name: shards[index]?.name || targets[index]?.shard || "Unknown",
+    cost: result.timePerShard,
+    fusions: result.craftsNeeded,
+    materials,
+  };
+});
 
     // Sort alphabetically
     rows.sort((a, b) => a.name.localeCompare(b.name));
@@ -898,29 +920,59 @@ name: shards[index]?.name || targets[index]?.shard || "Unknown",
               />
             )}
 {allShardResults.length > 0 && (
-  <div className="bg-white/5 rounded-md p-4">
-    <table className="w-full text-white">
-<thead>
-  <tr>
-    <th className="text-left">Shard</th>
-    <th className="text-right">Cost</th>
-    <th className="text-right">Fusions</th>
-  </tr>
-</thead>
+  <div className="bg-white/5 rounded-md p-4 overflow-x-auto">
+    <h2 className="text-lg font-semibold text-white mb-3">
+      All Shards
+    </h2>
 
-<tbody>
-  {allShardResults.map(r => (
-    <tr key={r.name}>
-  <td>{r.name}</td>
-  <td className="text-right">
-    {Math.round(r.cost).toLocaleString()}
-  </td>
-  <td className="text-right">
-    {r.fusions.toLocaleString()}
-  </td>
-</tr>
-  ))}
-</tbody>
+    <table className="w-full text-white">
+      <thead>
+        <tr className="border-b border-white/10">
+          <th className="text-left py-2">Shard</th>
+          <th className="text-right py-2">Cost</th>
+          <th className="text-right py-2">Fusions</th>
+          <th className="text-left py-2 pl-6">
+            Materials Required
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {allShardResults.map((r) => {
+          const materialsText =
+            r.materials.length > 0
+              ? r.materials
+                  .map(
+                    (material) =>
+                      `${material.quantity.toLocaleString()}x ${material.name}`
+                  )
+                  .join(", ")
+              : "No materials required";
+
+          return (
+            <tr
+              key={r.name}
+              className="border-b border-white/5"
+            >
+              <td className="py-2">
+                {r.name}
+              </td>
+
+              <td className="text-right py-2">
+                {Math.round(r.cost).toLocaleString()}
+              </td>
+
+              <td className="text-right py-2">
+                {r.fusions.toLocaleString()}
+              </td>
+
+              <td className="py-2 pl-6">
+                {materialsText}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
     </table>
   </div>
 )}

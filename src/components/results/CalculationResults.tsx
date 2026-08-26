@@ -98,7 +98,7 @@ export const CalculationResults: React.FC<CalculationResultsProps> = ({
               if (params.noWoodenBait) return null;
 
               const forestEssenceShards = Array.from(result.totalQuantities).filter(([shardId]) =>
-                ["shinyfish", "inferno koi", "abyssal lanternfish", "silentdepth"].includes(data.shards[shardId]?.name?.toLowerCase())
+                ["shinyfish", "inferno koi", "Abyssal Lantern", "silentdepth"].includes(data.shards[shardId]?.name?.toLowerCase())
               );
 
               if (forestEssenceShards.length === 0) return null;
