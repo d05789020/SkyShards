@@ -6506,7 +6506,7 @@
           "c": "gray"
         },
         {
-          "t": "Kill Field Mouse ",
+          "t": "Kill Pest ",
           "c": "gray"
         },
         {
@@ -9186,7 +9186,7 @@
           "c": "gray"
         },
         {
-          "t": "Kill Zealot Bruiser ",
+          "t": "Kill Bruiser ",
           "c": "gray"
         },
         {
@@ -16750,7 +16750,7 @@
           "t": " "
         },
         {
-          "t": "Lanternfish ",
+          "t": "Abyssal Lantern ",
           "c": "blue"
         },
         {
@@ -17303,7 +17303,7 @@
           "c": "gray"
         },
         {
-          "t": "Kill Wither Spectre ",
+          "t": "Kill  Wither Specter ",
           "c": "gray"
         },
         {
@@ -25272,7 +25272,7 @@
           "c": "gray"
         },
         {
-          "t": "Cinderbat",
+          "t": "Cinder Bat",
           "c": "gold"
         },
         {
@@ -29896,7 +29896,7 @@
           "c": "gray"
         },
         {
-          "t": "Kill Cinderbat ",
+          "t": "Kill Cinder Bat ",
           "c": "gray"
         },
         {
@@ -30273,7 +30273,7 @@
           "t": " "
         },
         {
-          "t": "Cinderbat",
+          "t": "Cinder Bat",
           "c": "gold"
         },
         {

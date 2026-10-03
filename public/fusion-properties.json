@@ -603,11 +603,11 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 2,
-    "id_result": "Lotusfish",
+    "id_result": "Lotus Fish",
     "chameleon_result": [
       "Harpy",
       "Mudworm",
-      "Lotusfish"
+      "Lotus Fish"
     ],
     "id_origin": [
       "Tadgang"
@@ -634,7 +634,7 @@
     "id_result": "Golden Ghoul",
     "chameleon_result": [
       "Mudworm",
-      "Lotusfish",
+      "Lotus Fish",
       "Golden Ghoul"
     ],
     "id_origin": [],
@@ -657,7 +657,7 @@
     "fuse_amount": 5,
     "id_result": "Locust",
     "chameleon_result": [
-      "Lotusfish",
+      "Lotus Fish",
       "Golden Ghoul",
       "Locust"
     ],
@@ -674,7 +674,7 @@
     ]
   },
   "C26": {
-    "name": "Lotusfish",
+    "name": "Lotus Fish",
     "rarity": "Common",
     "category": "Water",
     "family": [
@@ -725,7 +725,7 @@
     "chameleon_origin": [
       "Harpy",
       "Mudworm",
-      "Lotusfish"
+      "Lotus Fish"
     ]
   },
   "C28": {
@@ -753,7 +753,7 @@
     ],
     "chameleon_origin": [
       "Mudworm",
-      "Lotusfish",
+      "Lotus Fish",
       "Golden Ghoul"
     ]
   },
@@ -777,10 +777,10 @@
       "Inkling"
     ],
     "id_origin": [
-      "Lotusfish"
+      "Lotus Fish"
     ],
     "chameleon_origin": [
-      "Lotusfish",
+      "Lotus Fish",
       "Golden Ghoul",
       "Locust"
     ]
@@ -1486,7 +1486,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 2,
-    "id_result": "Field Mouse",
+    "id_result": "Pest",
     "chameleon_result": [
       "Tide",
       "Quake",
@@ -1578,7 +1578,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Field Mouse",
+    "id_result": "Pest",
     "chameleon_result": [
       "Goldfin",
       "Troglobyte",
@@ -1654,11 +1654,11 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Field Mouse",
+    "id_result": "Pest",
     "chameleon_result": [
       "Salamander",
       "Cuboa",
-      "Field Mouse"
+      "Pest"
     ],
     "id_origin": [],
     "chameleon_origin": [
@@ -1684,7 +1684,7 @@
     "id_result": "Mossybit",
     "chameleon_result": [
       "Cuboa",
-      "Field Mouse",
+      "Pest",
       "Mossybit"
     ],
     "id_origin": [],
@@ -1710,7 +1710,7 @@
     "fuse_amount": 2,
     "id_result": "Rain Slime",
     "chameleon_result": [
-      "Field Mouse",
+      "Pest",
       "Mossybit",
       "Rain Slime"
     ],
@@ -1722,7 +1722,7 @@
     ]
   },
   "U10": {
-    "name": "Field Mouse",
+    "name": "Pest",
     "rarity": "Uncommon",
     "category": "Forest",
     "family": [
@@ -1779,7 +1779,7 @@
     "chameleon_origin": [
       "Salamander",
       "Cuboa",
-      "Field Mouse"
+      "Pest"
     ]
   },
   "U12": {
@@ -1806,7 +1806,7 @@
     ],
     "chameleon_origin": [
       "Cuboa",
-      "Field Mouse",
+      "Pest",
       "Mossybit"
     ]
   },
@@ -1960,7 +1960,7 @@
       "Praying Mantis"
     ],
     "id_origin": [
-      "Field Mouse",
+      "Pest",
       "Heron"
     ],
     "chameleon_origin": [
@@ -2307,7 +2307,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Stridersurfer",
+    "id_result": "Strider Surfer",
     "chameleon_result": [
       "Flaming Spider",
       "Kiwi",
@@ -2335,11 +2335,11 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Zealot Bruiser",
+    "id_result": "Bruiser",
     "chameleon_result": [
       "Kiwi",
       "Sylvan",
-      "Zealot Bruiser"
+      "Bruiser"
     ],
     "id_origin": [
       "Soul of the Alpha"
@@ -2366,7 +2366,7 @@
     "id_result": "Woodlouse",
     "chameleon_result": [
       "Sylvan",
-      "Zealot Bruiser",
+      "Bruiser",
       "Cascade"
     ],
     "id_origin": [],
@@ -2377,7 +2377,7 @@
     ]
   },
   "U36": {
-    "name": "Zealot Bruiser",
+    "name": "Bruiser",
     "rarity": "Uncommon",
     "category": "Combat",
     "family": [],
@@ -2390,7 +2390,7 @@
     "id_result": "Minos Hunter",
     "chameleon_result": [
       "Sylvan",
-      "Stridersurfer",
+      "Strider Surfer",
       "Rana"
     ],
     "id_origin": [
@@ -2402,7 +2402,7 @@
     ]
   },
   "U38": {
-    "name": "Stridersurfer",
+    "name": "Strider Surfer",
     "rarity": "Uncommon",
     "category": "Water",
     "family": [
@@ -2424,7 +2424,7 @@
       "Magma Slug"
     ],
     "chameleon_origin": [
-      "Zealot Bruiser"
+      "Bruiser"
     ]
   },
   "U39": {
@@ -2449,8 +2449,8 @@
     ],
     "id_origin": [],
     "chameleon_origin": [
-      "Zealot Bruiser",
-      "Stridersurfer"
+      "Bruiser",
+      "Strider Surfer"
     ]
   },
   "U40": {
@@ -2474,7 +2474,7 @@
     ],
     "id_origin": [],
     "chameleon_origin": [
-      "Stridersurfer",
+      "Strider Surfer",
       "Rana"
     ]
   },
@@ -2496,10 +2496,10 @@
       "Bayou Sludge"
     ],
     "id_origin": [
-      "Stridersurfer"
+      "Strider Surfer"
     ],
     "chameleon_origin": [
-      "Stridersurfer",
+      "Strider Surfer",
       "Rana",
       "Earthworm"
     ]
@@ -2973,7 +2973,7 @@
       "Parched"
     ],
     "id_origin": [
-      "Zealot Bruiser",
+      "Bruiser",
       "Rana",
       "Polaris",
       "Areita",
@@ -3646,13 +3646,13 @@
     ],
     "id_origin": [],
     "chameleon_origin": [
-      "Field Mouse",
+      "Pest",
       "Mossybit",
       "Rain Slime",
       "Magma Slug",
       "Flaming Spider",
       "Kiwi",
-      "Zealot Bruiser",
+      "Bruiser",
       "Gazer",
       "Honeybug",
       "Shuddersquid",
@@ -3944,7 +3944,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Abyssal Lanternfish",
+    "id_result": "Abyssal Lantern",
     "chameleon_result": [
       "Terra",
       "Hideongeon",
@@ -4107,7 +4107,7 @@
     "id_result": "Arachne",
     "chameleon_result": [
       "Hideondra",
-      "Abyssal Lanternfish",
+      "Abyssal Lantern",
       "Arachne"
     ],
     "id_origin": [
@@ -4133,7 +4133,7 @@
     "fuse_amount": 5,
     "id_result": "Thyst",
     "chameleon_result": [
-      "Abyssal Lanternfish",
+      "Abyssal Lantern",
       "Arachne"
     ],
     "id_origin": [],
@@ -4143,7 +4143,7 @@
     ]
   },
   "R23": {
-    "name": "Abyssal Lanternfish",
+    "name": "Abyssal Lantern",
     "rarity": "Rare",
     "category": "Water",
     "family": [
@@ -4192,7 +4192,7 @@
     "chameleon_origin": [
       "Star Sentry",
       "Hideondra",
-      "Abyssal Lanternfish"
+      "Abyssal Lantern"
     ]
   },
   "R25": {
@@ -4235,10 +4235,10 @@
       "Silentdepth"
     ],
     "id_origin": [
-      "Abyssal Lanternfish"
+      "Abyssal Lantern"
     ],
     "chameleon_origin": [
-      "Abyssal Lanternfish",
+      "Abyssal Lantern",
       "Arachne",
       "Bitbug"
     ]
@@ -4387,7 +4387,7 @@
       "Cave Dweller"
     ],
     "input1": "Troglobyte Shard",
-    "input2": "Abyssal Lanternfish Shard|Cave Dweller",
+    "input2": "Abyssal Lantern Shard|Cave Dweller",
     "synthesized": true,
     "chameleon": true,
     "recipe_type": null,
@@ -4470,11 +4470,11 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Wither Spectre",
+    "id_result": " Wither Specter",
     "chameleon_result": [
       "Hummingbird",
       "Carrot King",
-      "Wither Spectre"
+      " Wither Specter"
     ],
     "id_origin": [
       "Skeletor",
@@ -4502,7 +4502,7 @@
     "id_result": "Dreadwing",
     "chameleon_result": [
       "Carrot King",
-      "Wither Spectre",
+      " Wither Specter",
       "Badger"
     ],
     "id_origin": [],
@@ -4525,7 +4525,7 @@
     "fuse_amount": 5,
     "id_result": "Lumisquid",
     "chameleon_result": [
-      "Wither Spectre",
+      " Wither Specter",
       "Badger",
       "Terra"
     ],
@@ -4539,7 +4539,7 @@
     ]
   },
   "R39": {
-    "name": "Wither Spectre",
+    "name": " Wither Specter",
     "rarity": "Rare",
     "category": "Combat",
     "family": [],
@@ -4585,7 +4585,7 @@
     "chameleon_origin": [
       "Hummingbird",
       "Carrot King",
-      "Wither Spectre"
+      " Wither Specter"
     ]
   },
   "R42": {
@@ -4606,10 +4606,10 @@
       "Crocodile"
     ],
     "id_origin": [
-      "Wither Spectre"
+      " Wither Specter"
     ],
     "chameleon_origin": [
-      "Wither Spectre",
+      " Wither Specter",
       "Badger"
     ]
   },
@@ -5988,7 +5988,7 @@
       "Lava Leech",
       "Revenant",
       "Carrot King",
-      "Wither Spectre",
+      " Wither Specter",
       "Badger",
       "Crocodile",
       "Wild Hog",
@@ -6764,7 +6764,7 @@
       "Bug"
     ],
     "input1": "Praying Mantis Shard",
-    "input2": "Bezal Shard|Lava Flame Shard|Fire Eel Shard|Bal Shard|Flare Shard|Cinderbat Shard|Flaming Spider Shard",
+    "input2": "Bezal Shard|Lava Flame Shard|Fire Eel Shard|Bal Shard|Flare Shard|Cinder Bat Shard|Flaming Spider Shard",
     "synthesized": true,
     "chameleon": true,
     "recipe_type": null,
@@ -7406,7 +7406,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 2,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Blizzard",
       "Tempest"
@@ -7502,7 +7502,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 1,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Nessie",
       "Tiamat",
@@ -7580,7 +7580,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 2,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Tortoise",
       "End Stone Protector",
@@ -7660,7 +7660,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Naga",
       "Lapis Creeper",
@@ -7739,7 +7739,7 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Spike",
       "Kraken"
@@ -7908,7 +7908,7 @@
     "chameleon": false,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Ananke",
       "Hideonbox"
@@ -7976,11 +7976,11 @@
     "chameleon": true,
     "recipe_type": null,
     "fuse_amount": 5,
-    "id_result": "Cinderbat",
+    "id_result": "Cinder Bat",
     "chameleon_result": [
       "Lord Jawbus",
       "Hellwisp",
-      "Cinderbat"
+      "Cinder Bat"
     ],
     "id_origin": [],
     "chameleon_origin": [
@@ -8005,7 +8005,7 @@
     "id_result": "Titanoboa",
     "chameleon_result": [
       "Hellwisp",
-      "Cinderbat",
+      "Cinder Bat",
       "Megalith"
     ],
     "id_origin": [
@@ -8034,7 +8034,7 @@
     "fuse_amount": 5,
     "id_result": null,
     "chameleon_result": [
-      "Cinderbat",
+      "Cinder Bat",
       "Megalith",
       "Power Dragon"
     ],
@@ -8051,7 +8051,7 @@
     ]
   },
   "L28": {
-    "name": "Cinderbat",
+    "name": "Cinder Bat",
     "rarity": "Legendary",
     "category": "Forest",
     "family": [],
@@ -8106,7 +8106,7 @@
     "chameleon_origin": [
       "Lord Jawbus",
       "Hellwisp",
-      "Cinderbat"
+      "Cinder Bat"
     ]
   },
   "L30": {
@@ -8131,7 +8131,7 @@
     "id_origin": [],
     "chameleon_origin": [
       "Hellwisp",
-      "Cinderbat",
+      "Cinder Bat",
       "Megalith"
     ]
   },
@@ -8156,7 +8156,7 @@
     ],
     "id_origin": [],
     "chameleon_origin": [
-      "Cinderbat",
+      "Cinder Bat",
       "Megalith",
       "Power Dragon"
     ]
@@ -8167,7 +8167,7 @@
     "category": "Water",
     "family": [],
     "input1": "Shinyfish Shard",
-    "input2": "Bezal Shard|Lava Flame Shard|Fire Eel Shard|Bal Shard|Flare Shard|Cinderbat Shard|Flaming Spider Shard",
+    "input2": "Bezal Shard|Lava Flame Shard|Fire Eel Shard|Bal Shard|Flare Shard|Cinder Bat Shard|Flaming Spider Shard",
     "synthesized": true,
     "chameleon": true,
     "recipe_type": null,
@@ -8351,7 +8351,7 @@
     "id_result": null,
     "chameleon_result": [],
     "id_origin": [
-      "Cinderbat",
+      "Cinder Bat",
       "Condor",
       "Dodo"
     ],
